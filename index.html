@@ -1,89 +1,216 @@
 <!DOCTYPE html>
-<html>
+<html lang="uk">
 <head>
-    <meta charset="UTF-8">
-    <title>Моє Портфоліо</title>
-    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
-    
-    <style>
-        /* Тут ми будемо додавати CSS-стилі */
-        body { 
-            font-family: Arial, sans-serif; 
-            margin: 0;
-            padding: 0;
-            background-color: #f0f2f5;
-        }
-        .container {
-            width: 90%;
-            max-width: 900px;
-            margin: 20px auto;
-            padding: 20px;
-            background-color: #ffffff;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        }
-        h1, h2 {
-            color: #333;
-            border-bottom: 2px solid #007bff;
-            padding-bottom: 5px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 10px;
-            text-align: left;
-        }
-        th {
-            background-color: #f2f2f2;
-            color: #555;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <title>Matrix Chat</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/alpinejs" defer></script>
 </head>
-<body>
+<body class="bg-gray-100 flex items-center justify-center h-screen">
 
-    <div class="container">
-        <h1>Моє портфоліо</h1>
-        <p>Вітаю! Це мій перший практичний проєкт в Electron.</p>
+  <div x-data="chatApp()"
+       :class="accessToken ? 'w-full max-w-5xl' : 'w-96'"
+       class="bg-white p-6 rounded shadow-md transition-all duration-300">
 
-    </div>
-    
-    <div class="container">
-        <h2>Мої навички</h2>
-        <ul>
-            <li>HTML5 - Основи</li>
-            <li>CSS - Базові стилі</li>
-            <li>JavaScript - Початківець</li>
-            <li>Electron - Встановлення та запуск</li>
-        </ul>
-    </div>
+    <!-- Форма логіну -->
+    <template x-if="!accessToken">
+      <div>
+        <h2 class="text-xl font-bold mb-4">Вхід</h2>
+        <input x-model="username" placeholder="Логін (без @:matrix.org)"
+               class="border p-2 w-full mb-2 rounded" />
+        <input x-model="password" type="password" placeholder="Пароль"
+               class="border p-2 w-full mb-2 rounded" />
+        <button @click="login()"
+                class="bg-blue-600 hover:bg-blue-700 text-white p-2 w-full rounded">
+          Увійти
+        </button>
+        <!-- Локалізоване повідомлення про помилку -->
+        <p x-show="errorKey" x-text="t(errorKey)"
+           class="text-red-600 mt-2"></p>
+      </div>
+    </template>
 
-    <div class="container">
-        <h2>Мої проєкти</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Назва проєкту</th>
-                    <th>Технологія</th>
-                    <th>Статус</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>Перший додаток</td>
-                    <td>Electron.js</td>
-                    <td>В процесі</td>
-                </tr>
-                <tr>
-                    <td>Портфоліо</td>
-                    <td>HTML/CSS</td>
-                    <td>Готово</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
+    <!-- Панель після авторизації (розширена) -->
+    <template x-if="accessToken">
+      <div class="space-y-4">
+        <h1 class="text-2xl font-bold">Ви успішно авторизувались. Ваша панель керування</h1>
+
+        <!-- Інфо про користувача Matrix -->
+        <div class="flex flex-col gap-3 md:flex-row">
+          <div class="flex-1 p-3 bg-gray-100 rounded">
+            <div class="text-sm text-gray-600">Ваш Matrix ID</div>
+            <div class="font-mono break-words" x-text="userId || 'Завантаження…'"></div>
+          </div>
+          <div class="flex-1 p-3 bg-gray-100 rounded">
+            <div class="text-sm text-gray-600">Токен доступу</div>
+            <div class="font-mono break-words truncate" x-text="accessToken"></div>
+          </div>
+        </div>
+
+        <!-- РЕЗЮМЕ -->
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- Ліва колонка -->
+          <aside class="md:col-span-1 space-y-4">
+            <div class="p-4 rounded border">
+              <div class="text-xl font-semibold" x-text="cv.name"></div>
+              <div class="text-gray-600" x-text="cv.role"></div>
+              <div class="mt-2 text-sm text-gray-700 space-y-1">
+                <div><span class="font-semibold">Email:</span> <span x-text="cv.contacts.email"></span></div>
+                <div><span class="font-semibold">Телефон:</span> <span x-text="cv.contacts.phone"></span></div>
+                <div><span class="font-semibold">Місто:</span> <span x-text="cv.contacts.city"></span></div>
+              </div>
+            </div>
+
+            <div class="p-4 rounded border">
+              <div class="font-semibold mb-2">Навички</div>
+              <ul class="list-disc list-inside text-sm space-y-1">
+                <template x-for="skill in cv.skills" :key="skill">
+                  <li x-text="skill"></li>
+                </template>
+              </ul>
+            </div>
+          </aside>
+
+          <!-- Права колонка -->
+          <main class="md:col-span-2 space-y-4">
+            <div class="p-4 rounded border">
+              <div class="font-semibold mb-2">Про себе</div>
+              <p class="text-sm text-gray-800" x-text="cv.summary"></p>
+            </div>
+
+            <div class="p-4 rounded border">
+              <div class="font-semibold mb-3">Досвід</div>
+              <div class="space-y-3">
+                <template x-for="job in cv.experience" :key="job.company + job.title">
+                  <div>
+                    <div class="font-semibold" x-text="job.title + ' — ' + job.company"></div>
+                    <div class="text-xs text-gray-600" x-text="job.period"></div>
+                    <ul class="list-disc list-inside text-sm mt-1 space-y-1">
+                      <template x-for="pt in job.points" :key="pt">
+                        <li x-text="pt"></li>
+                      </template>
+                    </ul>
+                  </div>
+                </template>
+              </div>
+            </div>
+
+            <div class="p-4 rounded border">
+              <div class="font-semibold mb-3">Освіта</div>
+              <div class="space-y-2">
+                <template x-for="edu in cv.education" :key="edu.place + edu.degree">
+                  <div>
+                    <div class="font-semibold" x-text="edu.degree"></div>
+                    <div class="text-sm" x-text="edu.place"></div>
+                    <div class="text-xs text-gray-600" x-text="edu.period"></div>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </main>
+        </section>
+      </div>
+    </template>
+  </div>
+
+  <script>
+    function chatApp() {
+      return {
+        // Форма
+        username: '',
+        password: '',
+        accessToken: '',
+        userId: '',
+        errorKey: '',
+
+        // Проста локалізація (можна розширювати)
+        locale: 'uk',
+        messages: {
+          uk: {
+            invalid_credentials: 'Невірний логін або пароль.',
+            user_deactivated: 'Обліковий запис деактивовано.',
+            bad_request: 'Неправильний запит. Перевірте введені дані.',
+            server_error: 'Помилка сервера. Спробуйте пізніше.',
+            network_error: 'Помилка мережі. Перевірте підключення до інтернету.',
+            unknown_error: 'Сталася непередбачена помилка.'
+          }
+        },
+        t(key) {
+          return (this.messages[this.locale] && this.messages[this.locale][key]) || key;
+        },
+
+        // Дані резюме — ЗАМІНИ ПІД СЕБЕ
+        cv: {
+          name: 'Швець Ярослава',
+          role: 'Front-end Developer',
+          contacts: {
+            email: 'myemail@gmail.com',
+            phone: '+380 00 000 00 00',
+            city: 'Київ'
+          },
+          skills: ['JavaScript', 'Node.js', 'Python'],
+          summary: 'Розробниця/дизайнер з фокусом на надійні веб-сервіси та UX.',
+          experience: [
+            {
+              title: 'Frontend Developer',
+              company: 'ІСЗЗІ',
+              period: '2023 — 2025',
+              points: [
+                'Electron'
+              ]
+            }
+          ],
+          education: [
+            { degree: 'Бакалавр компʼютерних наук', period: '2023 — 2027' }
+          ]
+        },
+
+        // Логін (Matrix Client-Server API)
+        async login() {
+          this.errorKey = '';
+          try {
+            const res = await fetch('https://matrix.org/_matrix/client/r0/login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                type: 'm.login.password',
+                user: this.username,
+                password: this.password
+              })
+            });
+
+            // HTTP рівень
+            if (!res.ok) {
+              // Мінімальне мапінґування типових статусів на українські повідомлення
+              if (res.status === 400) this.errorKey = 'bad_request';
+              else if (res.status === 401 || res.status === 403) this.errorKey = 'invalid_credentials';
+              else if (res.status >= 500) this.errorKey = 'server_error';
+              else this.errorKey = 'unknown_error';
+            }
+
+            const data = await res.json();
+
+            // Рівень Matrix помилок (errcode)
+            if (data && data.errcode) {
+              if (data.errcode === 'M_FORBIDDEN') this.errorKey = 'invalid_credentials';
+              if (data.errcode === 'M_USER_DEACTIVATED') this.errorKey = 'user_deactivated';
+            }
+
+            if (data && data.access_token) {
+              this.accessToken = data.access_token;
+              this.userId = data.user_id || '';
+              this.errorKey = '';
+            } else if (!this.errorKey) {
+              // Якщо немає токена і не відмапили помилку — показуємо загальну
+              this.errorKey = 'unknown_error';
+            }
+          } catch (e) {
+            console.error(e);
+            this.errorKey = 'network_error';
+          }
+        }
+      }
+    }
+  </script>
 </body>
 </html>
