@@ -3,212 +3,68 @@
 <head>
   <meta charset="UTF-8" />
   <title>Matrix Chat</title>
+
+  <!-- зовнішні бібліотеки -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/alpinejs" defer></script>
+
+  <!-- наші стилі -->
+  <link rel="stylesheet" href="./styles/layout.css">
+  <link rel="stylesheet" href="./sidebar/sidebar.css">
+  <link rel="stylesheet" href="./login/login.css">
+
+  <!-- наші скрипти -->
+  <script src="./login/login.js"></script>
+  <script src="./sidebar/sidebar.js"></script>
 </head>
-<body class="bg-gray-100 flex items-center justify-center h-screen">
+<body class="bg-gray-100 flex items-center justify-center p-4">
+  <div x-data="chatApp()" class="chat-container bg-white rounded-lg shadow-lg flex w-full max-w-5xl">
 
-  <div x-data="chatApp()"
-       :class="accessToken ? 'w-full max-w-5xl' : 'w-96'"
-       class="bg-white p-6 rounded shadow-md transition-all duration-300">
+    <!-- sidebar -->
+    <div id="sidebar-container"></div>
 
-    <!-- Форма логіну -->
-    <template x-if="!accessToken">
-      <div>
-        <h2 class="text-xl font-bold mb-4">Вхід</h2>
-        <input x-model="username" placeholder="Логін (без @:matrix.org)"
-               class="border p-2 w-full mb-2 rounded" />
-        <input x-model="password" type="password" placeholder="Пароль"
-               class="border p-2 w-full mb-2 rounded" />
-        <button @click="login()"
-                class="bg-blue-600 hover:bg-blue-700 text-white p-2 w-full rounded">
-          Увійти
-        </button>
-        <!-- Локалізоване повідомлення про помилку -->
-        <p x-show="errorKey" x-text="t(errorKey)"
-           class="text-red-600 mt-2"></p>
-      </div>
-    </template>
-
-    <!-- Панель після авторизації (розширена) -->
-    <template x-if="accessToken">
-      <div class="space-y-4">
-        <h1 class="text-2xl font-bold">Ви успішно авторизувались. Ваша панель керування</h1>
-
-        <!-- Інфо про користувача Matrix -->
-        <div class="flex flex-col gap-3 md:flex-row">
-          <div class="flex-1 p-3 bg-gray-100 rounded">
-            <div class="text-sm text-gray-600">Ваш Matrix ID</div>
-            <div class="font-mono break-words" x-text="userId || 'Завантаження…'"></div>
-          </div>
-          <div class="flex-1 p-3 bg-gray-100 rounded">
-            <div class="text-sm text-gray-600">Токен доступу</div>
-            <div class="font-mono break-words truncate" x-text="accessToken"></div>
-          </div>
-        </div>
-
-        <!-- РЕЗЮМЕ -->
-        <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <!-- Ліва колонка -->
-          <aside class="md:col-span-1 space-y-4">
-            <div class="p-4 rounded border">
-              <div class="text-xl font-semibold" x-text="cv.name"></div>
-              <div class="text-gray-600" x-text="cv.role"></div>
-              <div class="mt-2 text-sm text-gray-700 space-y-1">
-                <div><span class="font-semibold">Email:</span> <span x-text="cv.contacts.email"></span></div>
-                <div><span class="font-semibold">Телефон:</span> <span x-text="cv.contacts.phone"></span></div>
-                <div><span class="font-semibold">Місто:</span> <span x-text="cv.contacts.city"></span></div>
-              </div>
-            </div>
-
-            <div class="p-4 rounded border">
-              <div class="font-semibold mb-2">Навички</div>
-              <ul class="list-disc list-inside text-sm space-y-1">
-                <template x-for="skill in cv.skills" :key="skill">
-                  <li x-text="skill"></li>
-                </template>
-              </ul>
-            </div>
-          </aside>
-
-          <!-- Права колонка -->
-          <main class="md:col-span-2 space-y-4">
-            <div class="p-4 rounded border">
-              <div class="font-semibold mb-2">Про себе</div>
-              <p class="text-sm text-gray-800" x-text="cv.summary"></p>
-            </div>
-
-            <div class="p-4 rounded border">
-              <div class="font-semibold mb-3">Досвід</div>
-              <div class="space-y-3">
-                <template x-for="job in cv.experience" :key="job.company + job.title">
-                  <div>
-                    <div class="font-semibold" x-text="job.title + ' — ' + job.company"></div>
-                    <div class="text-xs text-gray-600" x-text="job.period"></div>
-                    <ul class="list-disc list-inside text-sm mt-1 space-y-1">
-                      <template x-for="pt in job.points" :key="pt">
-                        <li x-text="pt"></li>
-                      </template>
-                    </ul>
-                  </div>
-                </template>
-              </div>
-            </div>
-
-            <div class="p-4 rounded border">
-              <div class="font-semibold mb-3">Освіта</div>
-              <div class="space-y-2">
-                <template x-for="edu in cv.education" :key="edu.place + edu.degree">
-                  <div>
-                    <div class="font-semibold" x-text="edu.degree"></div>
-                    <div class="text-sm" x-text="edu.place"></div>
-                    <div class="text-xs text-gray-600" x-text="edu.period"></div>
-                  </div>
-                </template>
-              </div>
-            </div>
-          </main>
-        </section>
-      </div>
-    </template>
+    <!-- Основна частина -->
+    <div class="chat-area p-4 flex flex-col w-full">
+      <div id="login-container"></div>
+    </div>
   </div>
 
   <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      fetch('./login/login.html')
+        .then(res => res.text())
+        .then(html => {
+          document.getElementById('login-container').innerHTML = html;
+        })
+        .catch(err => console.error('Error loading login:', err));
+
+      fetch('./sidebar/sidebar.html')
+        .then(res => res.text())
+        .then(html => {
+          document.getElementById('sidebar-container').innerHTML = html;
+        })
+        .catch(err => console.error('Error loading sidebar:', err));
+    });
+
     function chatApp() {
       return {
-        // Форма
         username: '',
         password: '',
         accessToken: '',
         userId: '',
-        errorKey: '',
-
-        // Проста локалізація (можна розширювати)
-        locale: 'uk',
-        messages: {
-          uk: {
-            invalid_credentials: 'Невірний логін або пароль.',
-            user_deactivated: 'Обліковий запис деактивовано.',
-            bad_request: 'Неправильний запит. Перевірте введені дані.',
-            server_error: 'Помилка сервера. Спробуйте пізніше.',
-            network_error: 'Помилка мережі. Перевірте підключення до інтернету.',
-            unknown_error: 'Сталася непередбачена помилка.'
-          }
-        },
-        t(key) {
-          return (this.messages[this.locale] && this.messages[this.locale][key]) || key;
-        },
-
-        // Дані резюме — ЗАМІНИ ПІД СЕБЕ
-        cv: {
-          name: 'Швець Ярослава',
-          role: 'Front-end Developer',
-          contacts: {
-            email: 'myemail@gmail.com',
-            phone: '+380 00 000 00 00',
-            city: 'Київ'
-          },
-          skills: ['JavaScript', 'Node.js', 'Python'],
-          summary: 'Розробниця/дизайнер з фокусом на надійні веб-сервіси та UX.',
-          experience: [
-            {
-              title: 'Frontend Developer',
-              company: 'ІСЗЗІ',
-              period: '2023 — 2025',
-              points: [
-                'Electron'
-              ]
-            }
-          ],
-          education: [
-            { degree: 'Бакалавр компʼютерних наук', period: '2023 — 2027' }
-          ]
-        },
-
-        // Логін (Matrix Client-Server API)
-        async login() {
-          this.errorKey = '';
-          try {
-            const res = await fetch('https://matrix.org/_matrix/client/r0/login', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                type: 'm.login.password',
-                user: this.username,
-                password: this.password
-              })
-            });
-
-            // HTTP рівень
-            if (!res.ok) {
-              // Мінімальне мапінґування типових статусів на українські повідомлення
-              if (res.status === 400) this.errorKey = 'bad_request';
-              else if (res.status === 401 || res.status === 403) this.errorKey = 'invalid_credentials';
-              else if (res.status >= 500) this.errorKey = 'server_error';
-              else this.errorKey = 'unknown_error';
-            }
-
-            const data = await res.json();
-
-            // Рівень Matrix помилок (errcode)
-            if (data && data.errcode) {
-              if (data.errcode === 'M_FORBIDDEN') this.errorKey = 'invalid_credentials';
-              if (data.errcode === 'M_USER_DEACTIVATED') this.errorKey = 'user_deactivated';
-            }
-
-            if (data && data.access_token) {
-              this.accessToken = data.access_token;
-              this.userId = data.user_id || '';
-              this.errorKey = '';
-            } else if (!this.errorKey) {
-              // Якщо немає токена і не відмапили помилку — показуємо загальну
-              this.errorKey = 'unknown_error';
-            }
-          } catch (e) {
-            console.error(e);
-            this.errorKey = 'network_error';
-          }
-        }
+        roomId: '',
+        joinRoomId: '',
+        newRoomName: '',
+        newRoomId: '',
+        rooms: [],
+        messages: [],
+        newMessage: '',
+        inviteUser: '',
+        error: '',
+        lastSyncToken: '',
+        login,
+        createRoom,
+        fetchRoomsWithNames,
       }
     }
   </script>
