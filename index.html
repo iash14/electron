@@ -74,6 +74,8 @@
         error: '',
         lastSyncToken: '',
         roomMembers: [],
+        editMode: null,
+        editText: '',
         login,
         createRoom,
         leaveRoom,
@@ -85,9 +87,21 @@
         sendMessage,
         fetchMessages,
         fetchRoomMembers,
-        kickUser 
+        kickUser,
+        startEdit,
+        cancelEdit,
+        saveEdit,
+        deleteMessage,
+        showDesktopNotification,
+        playNotificationSound, 
       }
     }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if (Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+    });
   </script>
 </body>
 </html>
