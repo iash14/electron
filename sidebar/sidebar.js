@@ -158,3 +158,78 @@ async function fetchRoomMembers() {
     console.error('Error fetching room members:', e);
   }
 }
+
+async function leaveRoom(roomId) {
+
+    if (!this.accessToken || !roomId) return;
+
+    if (!confirm("Are you sure you want to leave this room?")) return;
+
+    try {
+        const res = await fetch(
+            `https://matrix.org/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/leave`,
+            {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${this.accessToken}` }
+            }
+        );
+
+        const data = await res.json();
+
+        if (res.ok) {
+            this.rooms = this.rooms.filter(r => r.roomId !== roomId);
+
+            if (this.roomId === roomId) {
+                this.roomId = '';
+                this.messages = [];
+                this.roomMembers = [];
+            }
+
+            await this.fetchRoomsWithNames();
+            alert("Room removed.");
+
+        } else {
+            alert('Failed to remove room: ' + (data.error || 'Unknown error'));
+        }
+
+    } catch (e) {
+        alert('Leave room error: ' + e.message);
+    }
+}
+
+
+
+async function kickUser(userId) {
+
+    if (!this.accessToken || !this.roomId || !userId) return;
+
+    if (!confirm(`Kick user ${userId} from the room?`)) return;
+
+    try {
+        const res = await fetch(
+            `https://matrix.org/_matrix/client/r0/rooms/${encodeURIComponent(this.roomId)}/kick`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.accessToken}`
+                },
+                body: JSON.stringify({ user_id: userId })
+            }
+        );
+
+        const data = await res.json();
+
+        if (res.ok) {
+            this.roomMembers = this.roomMembers.filter(m => m.userId !== userId);
+            await this.fetchRoomMembers();
+            alert(`User ${userId} was kicked.`);
+
+        } else {
+            alert('Kick failed: ' + (data.error || 'Unknown error'));
+        }
+
+    } catch (e) {
+        alert('Kick error: ' + e.message);
+    }
+}
